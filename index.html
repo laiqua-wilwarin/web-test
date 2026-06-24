@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>安房直子 · 作品情感分析</title>
+    <!-- 引入 D3.js 用于力导向图 -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* ---------- 全局重置 & 字体 ---------- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+            background: #faf8f5;
+            color: #2c2c2c;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 1100px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 32px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.04);
+            padding: 48px 52px;
+            transition: padding 0.2s;
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                padding: 28px 18px;
+            }
+        }
+
+        /* ---------- 标题 ---------- */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #efece6;
+            padding-bottom: 28px;
+        }
+
+        .header h1 {
+            font-size: 2.6rem;
+            font-weight: 300;
+            letter-spacing: 4px;
+            color: #3d3a33;
+        }
+
+        .header h1 span {
+            font-weight: 600;
+            color: #b28b6f;
+        }
+
+        .header .sub {
+            font-size: 0.95rem;
+            color: #a0978a;
+            margin-top: 8px;
+            letter-spacing: 2px;
+        }
+
+        /* ---------- 通用卡片 ---------- */
+        .section {
+            margin-bottom: 44px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            color: #4a443b;
+            margin-bottom: 16px;
+            padding-left: 6px;
+            border-left: 5px solid #b28b6f;
+            padding-left: 18px;
+        }
+
+        /* ---------- 作家介绍 ---------- */
+        .intro-grid {
+            display: flex;
+            gap: 32px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .intro-avatar {
+            flex: 0 0 140px;
+            text-align: center;
+        }
+
+        .intro-avatar .avatar-circle {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e8dfd4, #d6c9b8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            color: #7f6e5a;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+            margin: 0 auto 12px;
+            font-weight: 300;
+        }
+
+        .intro-avatar .name-jp {
+            font-size: 0.85rem;
+            color: #a0978a;
+            letter-spacing: 2px;
+        }
+
+        .intro-text {
+            flex: 1;
+            min-width: 220px;
+            line-height: 1.85;
+            color: #3d3a33;
+            font-size: 1rem;
+        }
+
+        .intro-text p {
+            margin-bottom: 12px;
+        }
+
+        .intro-text .highlight {
+            background: #f5f0ea;
+            padding: 0 6px;
+            border-radius: 4px;
+            color: #7f5f3f;
+            font-weight: 500;
+        }
+
+        .intro-text .bio-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 28px;
+            margin-top: 12px;
+            font-size: 0.92rem;
+            color: #6b6256;
+            background: #f8f5f0;
+            padding: 14px 20px;
+            border-radius: 14px;
+        }
+
+        .bio-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .bio-meta .dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #b28b6f;
+            margin-right: 4px;
+        }
+
+        /* ---------- 作品网格 (可点击) ---------- */
+        .works-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 14px;
+            margin-top: 6px;
+        }
+
+        .work-card {
+            background: #f8f5f0;
+            border-radius: 40px 12px 12px 40px;
+            padding: 10px 16px 10px 20px;
+            font-size: 0.95rem;
+            color: #3d3a33;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+        .work-card:hover {
+            background: #efe8de;
+            border-color: #d4c5b2;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+        }
+
+        .work-card:active {
+            transform: scale(0.97);
+        }
+
+        .work-card .icon {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .work-card .title {
+            flex: 1;
+            font-weight: 450;
+        }
+
+        .work-card .click-hint {
+            font-size: 0.6rem;
+            color: #b9aea0;
+            opacity: 0;
+            transition: opacity 0.2s;
+            margin-left: auto;
+        }
+
+        .work-card:hover .click-hint {
+            opacity: 1;
+        }
+
+        /* ---------- 模态框 ---------- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(30, 27, 22, 0.6);
+            backdrop-filter: blur(6px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.96);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-box {
+            background: #ffffff;
+            border-radius: 28px;
+            max-width: 840px;
+            width: 100%;
+            max-height: 92vh;
+            overflow-y: auto;
+            padding: 40px 44px 36px;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.2);
+            position: relative;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            0% {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-close {
+            position: sticky;
+            top: 0;
+            float: right;
+            background: #f5f0ea;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: #6b6256;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            z-index: 10;
+        }
+
+        .modal-close:hover {
+            background: #e8dfd4;
+            transform: rotate(90deg);
+        }
+
+        .modal-title {
+            font-size: 2rem;
+            font-weight: 500;
+            color: #3d3a33;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .modal-title .icon-big {
+            font-size: 2.2rem;
+        }
+
+        .modal-sub {
+            color: #a0978a;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #efece6;
+            padding-bottom: 16px;
+        }
+
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .modal-section h4 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #4a443b;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-section p {
+            font-size: 0.96rem;
+            line-height: 1.8;
+            color: #4d473f;
+        }
+
+        .modal-section .summary-text {
+            background: #faf8f5;
+            padding: 16px 20px;
+            border-radius: 14px;
+            border-left: 4px solid #d4c5b2;
+        }
+
+        /* ---------- 关系图容器 ---------- */
+        .relation-graph-container {
+            background: #fcfaf7;
+            border-radius: 16px;
+            border: 1px solid #eee9e2;
+            padding: 12px;
+            min-height: 320px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .relation-graph-container svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-height: 320px;
+            border-radius: 8px;
+        }
+
+        .relation-graph-container .graph-placeholder {
+            color: #b9aea0;
+            text-align: center;
+            padding: 40px 0;
+            font-size: 0.95rem;
+        }
+
+        /* 节点与连线样式 (由D3控制) */
+        .node-text {
+            font-size: 12px;
+            font-weight: 500;
+            fill: #3d3a33;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+        }
+
+        .link-line {
+            stroke: #bbb0a2;
+            stroke-width: 2px;
+            stroke-opacity: 0.6;
+        }
+
+        .link-label {
+            font-size: 10px;
+            fill: #6b6256;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+            background: rgba(255,255,255,0.7);
+            padding: 2px 6px;
+            border-radius: 8px;
+        }
+
+        /* ---------- 情感分析 ---------- */
+        .emotion-chart {
+            background: #fcfaf7;
+            border-radius: 16px;
+            padding: 20px 20px 16px;
+            border: 1px solid #eee9e2;
+            margin-top: 4px;
+        }
+
+        .emotion-chart .chart-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #4a443b;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .emotion-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .emotion-row .label {
+            width: 56px;
+            font-size: 0.82rem;
+            font-weight: 450;
+            color: #4a443b;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .emotion-row .track {
+            flex: 1;
+            height: 22px;
+            background: #f0ebe4;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .emotion-row .fill {
+            height: 100%;
+            border-radius: 20px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            min-width: 28px;
+        }
+
+        .emotion-row .fill.happiness {
+            background: linear-gradient(90deg, #e67e22, #f39c12);
+        }
+        .emotion-row .fill.beauty {
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+        }
+        .emotion-row .fill.sadness {
+            background: linear-gradient(90deg, #8e44ad, #9b59b6);
+        }
+        .emotion-row .fill.warmth {
+            background: linear-gradient(90deg, #d35400, #e67e22);
+        }
+        .emotion-row .fill.loneliness {
+            background: linear-gradient(90deg, #5d6d7e, #7f8c8d);
+        }
+
+        .emotion-row .value {
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: #4a443b;
+            min-width: 34px;
+            text-align: left;
+            flex-shrink: 0;
+        }
+
+        .emotion-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .emotion-tag {
+            padding: 3px 14px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #fff;
+            letter-spacing: 0.3px;
+        }
+
+        .emotion-tag.tag-happiness { background: #f39c12; }
+        .emotion-tag.tag-beauty { background: #2ecc71; }
+        .emotion-tag.tag-sadness { background: #9b59b6; }
+        .emotion-tag.tag-warmth { background: #e67e22; }
+        .emotion-tag.tag-loneliness { background: #7f8c8d; }
+
+        /* ---------- 风格总结 ---------- */
+        .style-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 700px) {
+            .style-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .style-card {
+            background: #f8f5f0;
+            border-radius: 18px;
+            padding: 20px 22px;
+            border-left: 4px solid #b28b6f;
+            transition: background 0.15s;
+        }
+
+        .style-card:hover {
+            background: #f2ece4;
+        }
+
+        .style-card h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #4a443b;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .style-card p {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #4d473f;
+        }
+
+        .style-card .emoji-big {
+            font-size: 1.6rem;
+            margin-right: 6px;
+        }
+
+        /* ---------- 页脚 ---------- */
+        .footer {
+            margin-top: 32px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #b9aea0;
+            border-top: 1px solid #eee9e2;
+            padding-top: 24px;
+            letter-spacing: 1px;
+        }
+
+        /* ---------- 滚动条美化 ---------- */
+        .modal-box::-webkit-scrollbar {
+            width: 5px;
+        }
+        .modal-box::-webkit-scrollbar-track {
+            background: #f5f0ea;
+            border-radius: 10px;
+        }
+        .modal-box::-webkit-scrollbar-thumb {
+            background: #d4c5b2;
+            border-radius: 10px;
+        }
+
+        /* ---------- 响应式 ---------- */
+        @media (max-width: 600px) {
+            .modal-box {
+                padding: 24px 18px 28px;
+                max-height: 95vh;
+            }
+            .modal-title {
+                font-size: 1.5rem;
+            }
+            .modal-title .icon-big {
+                font-size: 1.6rem;
+            }
+            .emotion-row .label {
+                width: 44px;
+                font-size: 0.7rem;
+            }
+            .emotion-row .value {
+                font-size: 0.7rem;
+                min-width: 28px;
+            }
+            .work-card .click-hint {
+                display: none;
+            }
+            .container {
+                padding: 16px 12px;
+            }
+            .intro-grid {
+                gap: 16px;
+            }
+            .intro-avatar {
+                flex: 0 0 100px;
+            }
+            .intro-avatar .avatar-circle {
+                width: 100px;
+                height: 100px;
+                font-size: 3rem;
+            }
+            .relation-graph-container {
+                min-height: 200px;
+            }
+            .relation-graph-container svg {
+                min-height: 200px;
+            }
+        }
+
+        body.modal-open {
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- ===== 标题 ===== -->
+        <header class="header">
+            <h1>安房<span>直子</span></h1>
+            <div class="sub">幻想与现实交织 · 唯美与哀伤并存</div>
+        </header>
+
+        <!-- ===== 1. 作家介绍 ===== -->
+        <section class="section">
+            <div class="section-title">📖 作家介绍</div>
+            <div class="intro-grid">
+                <div class="intro-avatar">
+                    <div class="avatar-circle">🌸</div>
+                    <div class="name-jp">あんぼう なおこ</div>
+                </div>
+                <div class="intro-text">
+                    <p>
+                        <span class="highlight">安房直子</span>（1943年1月5日 — 1993年2月25日），
+                        本名<span class="highlight">峰岸直子</span>，日本童话作家，生于东京。
+                        1962年于《目白儿童文学》创刊号发表《月夜的风琴》步入文坛，1969年以《花椒娃娃》获第三届日本儿童文学者协会新人奖。
+                        她一生淡泊，深居简出，甚至拒绝出门旅行，却留下了一山坡野菊花似的短篇幻想小说，如梦如幻，精美至极。
+                    </p>
+                    <p>
+                        安房直子毕业于日本女子大学国文系，师从山室静研习北欧儿童文学。
+                        其创作始终聚焦幻想文学，通过精心编织现实与异次元空间的故事结构，形成静谧和谐的独特文体。
+                        代表作包括《手绢上的花田》《狐狸的窗户》《北风遗忘的手绢》《遥远的野玫瑰村》《谁也看不见的阳台》等。
+                        1993年因肺炎逝世，终年50岁。
+                    </p>
+                    <div class="bio-meta">
+                        <span><span class="dot"></span> 1943 东京</span>
+                        <span><span class="dot"></span> 日本女子大学 国文科</span>
+                        <span><span class="dot"></span> 1969 新人奖</span>
+                        <span><span class="dot"></span> 1993 辞世</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== 2. 主要作品 (可点击) ===== -->
+        <section class="section">
+            <div class="section-title">📚 主要作品 <span style="font-size:0.7rem;font-weight:400;color:#b9aea0;margin-left:12px;">点击卡片查看详情</span></div>
+            <div class="works-grid" id="worksGrid"></div>
+        </section>
+
+        <!-- ===== 3. 作品风格总结 ===== -->
+        <section class="section">
+            <div class="section-title">🖋️ 作品风格总结</div>
+            <div class="style-grid">
+                <div class="style-card">
+                    <h4><span class="emoji-big">🌫️</span> 幻想与现实的边界</h4>
+                    <p>安房直子将现实沉入幻想的底层，最大限度地模糊了现实与幻想之间的界线。从极细微处着手——一条黄围巾、一片桔梗花田、一盏雪夜中的灯——都能延展出繁复而独具气息的童话森林。</p>
+                </div>
+                <div class="style-card">
+                    <h4><span class="emoji-big">💧</span> 唯美与哀伤的交织</h4>
+                    <p>孤独、死亡、温情、爱以及缱绻的怀念，是安房直子作品中最常见的主题。她的童话以隽永的悲伤为底色，传达出对消亡之物的眷恋与无可奈何的哀伤感。</p>
+                </div>
+                <div class="style-card">
+                    <h4><span class="emoji-big">🎨</span> 微妙的“安房式”美学</h4>
+                    <p>安房直子善于捕捉生活中具有美感的情景片段——雪夜中橘黄色的灯、油菜花田里奔跑的女孩、森林中歇息的白鸟。作品有着绚烂的色彩、纯粹的精灵、诗意的语言。</p>
+                </div>
+                <div class="style-card">
+                    <h4><span class="emoji-big">🧘</span> 静谧与深邃</h4>
+                    <p>安房直子一生淡泊，她的睿智和淡泊令笔下不算完美的角色在幻想世界中都获得了治愈。作品不仅描绘出现实以上的人生，更让我们窥见了人生的深渊。</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="footer">🌸 安房直子 · 1943 — 1993 · 幻想是现实边缘的彩虹</div>
+    </div>
+
+    <!-- ===== 模态框 ===== -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-box" id="modalBox">
+            <button class="modal-close" id="modalClose" aria-label="关闭">✕</button>
+            <div class="modal-title">
+                <span class="icon-big" id="modalIcon">🌸</span>
+                <span id="modalName">作品名</span>
+            </div>
+            <div class="modal-sub" id="modalSub">作品简介</div>
+            <div class="modal-body">
+                <!-- 简介 -->
+                <div class="modal-section">
+                    <h4>📝 简介</h4>
+                    <p id="modalIntro">简介内容</p>
+                </div>
+                <!-- 梗概 -->
+                <div class="modal-section">
+                    <h4>📖 故事梗概</h4>
+                    <div class="summary-text" id="modalSummary">梗概内容</div>
+                </div>
+                <!-- 角色关系图 -->
+                <div class="modal-section" id="modalGraphSection">
+                    <h4>👥 角色关系分布图</h4>
+                    <div id="modalGraphContainer" class="relation-graph-container">
+                        <div class="graph-placeholder">加载关系图中...</div>
+                    </div>
+                </div>
+                <!-- 情感分析 -->
+                <div class="modal-section">
+                    <div class="emotion-chart">
+                        <div class="chart-title">🎯 情感基调分析</div>
+                        <div id="emotionRows"></div>
+                        <div class="emotion-tags" id="emotionTags"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================================================================
+        //  作品数据（含完整角色列表与关系）
+        // ================================================================
+        const worksData = [{
+            id: 'huajiao',
+            title: '花椒娃娃',
+            icon: '🌸',
+            intro: '安房直子的出道之作，1969年获第三届日本儿童文学者协会新人奖。以花椒树为背景，讲述了一个关于精灵与人类纯真友谊的故事。',
+            summary: '一个小男孩在花椒树下遇到了一个神秘的小女孩——花椒娃娃。他们一起玩耍、分享秘密，花椒树成为了他们之间最美好的纽带。然而，随着季节更替，花椒娃娃渐渐消失，只留下淡淡的香气和一段永恒的回忆。',
+            emotions: { happiness: 65, beauty: 80, sadness: 30, warmth: 70, loneliness: 20 },
+            characters: [
+                { name: '男孩', icon: '👦', importance: 5 },
+                { name: '花椒娃娃', icon: '🌸', importance: 5 },
+                { name: '爷爷', icon: '👴', importance: 3 }
+            ],
+            relations: [
+                { source: '男孩', target: '花椒娃娃', label: '玩耍' },
+                { source: '男孩', target: '爷爷', label: '祖孙' }
+            ]
+        }, {
+            id: 'huli',
+            title: '狐狸的窗户',
+            icon: '🪟',
+            intro: '安房直子最负盛名的短篇之一，以桔梗花与狐狸为线索，讲述了一个关于遗忘与重逢的奇幻故事。',
+            summary: '一个猎人在森林中迷路，遇到了一只用桔梗花染蓝手指的狐狸。狐狸教他用染蓝的手指搭成窗户，透过窗户可以看到早已逝去的亲人。猎人透过窗户看到了自己已故的母亲和妹妹，心中涌起无限温暖。当猎人回到现实，手指上的蓝色渐渐褪去，他发现自己再也无法搭起那扇窗户了。',
+            emotions: { happiness: 45, beauty: 70, sadness: 85, warmth: 60, loneliness: 50 },
+            characters: [
+                { name: '猎人', icon: '🏹', importance: 5 },
+                { name: '狐狸', icon: '🦊', importance: 4 },
+                { name: '母亲', icon: '👩', importance: 3 },
+                { name: '妹妹', icon: '👧', importance: 3 }
+            ],
+            relations: [
+                { source: '猎人', target: '狐狸', label: '相遇' },
+                { source: '猎人', target: '母亲', label: '怀念' },
+                { source: '猎人', target: '妹妹', label: '怀念' }
+            ],
+            timeline: [
+                { step: '① 迷失', event: '猎人在森林中迷路' },
+                { step: '② 相遇', event: '遇见狐狸，学会搭窗户' },
+                { step: '③ 重逢', event: '透过窗户看见母亲和妹妹' },
+                { step: '④ 褪色', event: '蓝色褪去，窗户消失' }
+            ]
+        }, {
+            id: 'shijuan',
+            title: '手绢上的花田',
+            icon: '🧣',
+            intro: '安房直子的代表作之一，一块神奇的手绢上开出的花田，承载着幻想与现实的交错。',
+            summary: '邮递员良夫收到了一块绣着花田图案的手绢，只要在手绢上撒上种子，就会开出真正的花朵。良夫和妻子利用这块手绢过上了富足的生活，但手绢的魔力也带来了意想不到的后果。随着花田越开越盛，良夫逐渐迷失在幻想与现实的边界。',
+            emotions: { happiness: 75, beauty: 90, sadness: 55, warmth: 65, loneliness: 25 },
+            characters: [
+                { name: '良夫', icon: '🧑‍💼', importance: 5 },
+                { name: '妻子', icon: '👩', importance: 4 },
+                { name: '老奶奶', icon: '👵', importance: 4 }
+            ],
+            relations: [
+                { source: '良夫', target: '妻子', label: '夫妻' },
+                { source: '良夫', target: '老奶奶', label: '赠予' }
+            ]
+        }, {
+            id: 'yeyanmei',
+            title: '遥远的野玫瑰村',
+            icon: '🌹',
+            intro: '以野玫瑰为主题的幻想故事，在诗意的文字中探寻爱与失去的永恒主题。',
+            summary: '一个关于野玫瑰村的故事，那里的人们与玫瑰有着神秘的联系。主人公在寻找一个传说中的玫瑰村庄时，遇到了一系列奇异的事件：玫瑰会在夜晚发光，村庄会在月光下消失。故事通过玫瑰的意象，探讨了记忆、爱情与死亡之间的纠葛。',
+            emotions: { happiness: 55, beauty: 85, sadness: 70, warmth: 60, loneliness: 55 },
+            characters: [
+                { name: '主人公', icon: '🧑‍🌾', importance: 5 },
+                { name: '老奶奶', icon: '👵', importance: 4 },
+                { name: '玫瑰精灵', icon: '🌹', importance: 4 },
+                { name: '村庄居民', icon: '👨‍👩‍👧‍👦', importance: 2 }
+            ],
+            relations: [
+                { source: '主人公', target: '玫瑰精灵', label: '寻找' },
+                { source: '主人公', target: '老奶奶', label: '指引' }
+            ],
+            timeline: [
+                { step: '① 启程', event: '主人公踏上寻找野玫瑰村的旅程' },
+                { step: '② 发现', event: '在月光下发现神秘的玫瑰村庄' },
+                { step: '③ 秘密', event: '了解玫瑰与记忆的秘密' },
+                { step: '④ 告别', event: '离开村庄，将怀念藏在心底' }
+            ]
+        }, {
+            id: 'beifeng',
+            title: '北风遗忘的手绢',
+            icon: '🌬️',
+            intro: '以北风为主题，讲述了一个关于遗忘、寻找与重逢的温情故事。',
+            summary: '北风在冬天匆匆离去时，遗忘了一条绣着雪花图案的手绢。一个善良的女孩捡到了手绢，她决定去寻找北风，把手绢还给他。在旅途中，女孩遇到了各种各样的生物，它们都曾受到北风的恩惠。最终女孩明白了，北风虽然看似冷酷，却用他的方式温暖着世界。',
+            emotions: { happiness: 50, beauty: 70, sadness: 60, warmth: 75, loneliness: 50 },
+            characters: [
+                { name: '女孩', icon: '👧', importance: 5 },
+                { name: '北风', icon: '💨', importance: 5 },
+                { name: '兔子', icon: '🐇', importance: 3 },
+                { name: '松鼠', icon: '🐿️', importance: 3 }
+            ],
+            relations: [
+                { source: '女孩', target: '北风', label: '寻找' },
+                { source: '女孩', target: '兔子', label: '遇到' },
+                { source: '女孩', target: '松鼠', label: '遇到' }
+            ]
+        }, {
+            id: 'yangtai',
+            title: '谁也看不见的阳台',
+            icon: '🏠',
+            intro: '一座只有特定之人才能看见的阳台，成为连接现实与幻想的神秘桥梁。',
+            summary: '在城市的一角，有一座谁也看不见的阳台，只有心怀梦想的人才能发现它。一个孤独的女孩偶然发现了这座阳台，她在这里遇到了各种奇妙的人物：会说话的猫、种星星的老人、收集月光的孩子。阳台成为了女孩逃避现实压力的避风港。',
+            emotions: { happiness: 70, beauty: 80, sadness: 45, warmth: 65, loneliness: 30 },
+            characters: [
+                { name: '女孩', icon: '👧', importance: 5 },
+                { name: '会说话的猫', icon: '🐱', importance: 4 },
+                { name: '种星星的老人', icon: '👴', importance: 4 },
+                { name: '收集月光的孩子', icon: '🧒', importance: 3 }
+            ],
+            relations: [
+                { source: '女孩', target: '会说话的猫', label: '相遇' },
+                { source: '女孩', target: '种星星的老人', label: '相遇' },
+                { source: '女孩', target: '收集月光的孩子', label: '相遇' }
+            ]
+        }, {
+            id: 'fengyushu',
+            title: '风与树的歌',
+            icon: '🌳',
+            intro: '安房直子的短篇集，以风与树为线索，编织出一曲自然的赞美诗。',
+            summary: '收录了多个关于风与树的短篇故事：一棵老树在风中讲述着千年的记忆，风儿带着树叶去远方旅行，树梢上的鸟巢里住着一个小精灵。每个故事都展现了自然与人类之间的微妙关系。',
+            emotions: { happiness: 60, beauty: 85, sadness: 50, warmth: 70, loneliness: 45 },
+            characters: [
+                { name: '老树', icon: '🌳', importance: 5 },
+                { name: '风', icon: '🍃', importance: 4 },
+                { name: '小精灵', icon: '🧚', importance: 3 }
+            ],
+            relations: [
+                { source: '老树', target: '风', label: '诉说' },
+                { source: '老树', target: '小精灵', label: '栖息' }
+            ]
+        }, {
+            id: 'yinkongque',
+            title: '银孔雀',
+            icon: '🦚',
+            intro: '以孔雀为象征，探讨了美、追求与牺牲之间的复杂关系。',
+            summary: '传说中有一只银色的孔雀，它的羽毛拥有神奇的力量，可以治愈一切伤痛。一个年轻的画家听说后，踏上了寻找银孔雀的旅程。在旅途中，他遇到了各种诱惑和考验，逐渐意识到真正的美并非外在的华丽，而是内心的纯净与坚韧。',
+            emotions: { happiness: 45, beauty: 75, sadness: 65, warmth: 50, loneliness: 60 },
+            characters: [
+                { name: '画家', icon: '🎨', importance: 5 },
+                { name: '银孔雀', icon: '🦚', importance: 5 },
+                { name: '诱惑者', icon: '😈', importance: 3 }
+            ],
+            relations: [
+                { source: '画家', target: '银孔雀', label: '寻找' },
+                { source: '画家', target: '诱惑者', label: '遭遇' }
+            ]
+        }, {
+            id: 'huanghunhai',
+            title: '黄昏海的故事',
+            icon: '🌅',
+            intro: '以黄昏的海为背景，讲述了一个关于等待、回忆与告别的动人故事。',
+            summary: '在黄昏的海边，一位年迈的老人向一个年轻人讲述了大海的传说：大海有着自己的记忆和情感，它会在黄昏时分低语，向那些愿意倾听的人诉说被遗忘的故事。老人年轻时曾在这片海边等待一个永远不会回来的人，而大海见证了他的等待与思念。',
+            emotions: { happiness: 40, beauty: 65, sadness: 80, warmth: 55, loneliness: 70 },
+            characters: [
+                { name: '老人', icon: '👴', importance: 5 },
+                { name: '年轻人', icon: '🧑', importance: 4 },
+                { name: '永远不会回来的人', icon: '💔', importance: 4 }
+            ],
+            relations: [
+                { source: '老人', target: '年轻人', label: '讲述' },
+                { source: '老人', target: '永远不会回来的人', label: '等待' }
+            ],
+            timeline: [
+                { step: '① 黄昏', event: '老人向年轻人讲述大海的传说' },
+                { step: '② 回忆', event: '回忆起年轻时等待恋人的时光' },
+                { step: '③ 低语', event: '大海在黄昏中低语，诉说被遗忘的故事' },
+                { step: '④ 慰藉', event: '老人从涛声中得到安慰' }
+            ]
+        }, {
+            id: 'hongmeigui',
+            title: '红玫瑰旅馆的客人',
+            icon: '🏨',
+            intro: '一家只接待特定客人的旅馆，每个房间都藏着一个与玫瑰有关的故事。',
+            summary: '红玫瑰旅馆位于森林深处，只有那些与玫瑰有着特殊缘分的人才能找到它。每个入住的客人都有一个与玫瑰相关的故事：有人来寻找失落的爱情，有人来纪念逝去的亲人，有人来治愈内心的伤口。旅馆的女主人用玫瑰茶和温暖的微笑款待每一位客人。',
+            emotions: { happiness: 60, beauty: 70, sadness: 50, warmth: 75, loneliness: 40 },
+            characters: [
+                { name: '客人', icon: '🧳', importance: 5 },
+                { name: '女主人', icon: '👩‍🍳', importance: 5 },
+                { name: '其他客人', icon: '🧑‍🤝‍🧑', importance: 2 }
+            ],
+            relations: [
+                { source: '客人', target: '女主人', label: '被款待' },
+                { source: '客人', target: '其他客人', label: '相遇' }
+            ]
+        }, {
+            id: 'tianlu',
+            title: '天鹿',
+            icon: '🦌',
+            intro: '一只有着神奇力量的天鹿，带领主人公踏上了一段跨越时空的旅程。',
+            summary: '一个女孩在森林中遇到了一只有着金色鹿角的天鹿，天鹿带着她穿越了时间与空间的界限，看到了过去与未来的景象。在旅途中，女孩逐渐明白了生命的珍贵与自然的奥秘，也学会了与自己和解。',
+            emotions: { happiness: 50, beauty: 65, sadness: 55, warmth: 60, loneliness: 45 },
+            characters: [
+                { name: '女孩', icon: '👧', importance: 5 },
+                { name: '天鹿', icon: '🦌', importance: 5 }
+            ],
+            relations: [
+                { source: '女孩', target: '天鹿', label: '相遇' }
+            ]
+        }, {
+            id: 'zidingxiang',
+            title: '紫丁香大街的帽子店',
+            icon: '🧢',
+            intro: '一家神秘的帽子店，每一顶帽子都承载着一个人的梦想与回忆。',
+            summary: '在紫丁香大街的尽头，有一家古老的帽子店。店主是一位慈祥的老奶奶，她制作的帽子能够实现佩戴者的愿望。一个失意的年轻人来到店里，戴上帽子后经历了一段奇妙的冒险，最终找到了自己真正想要的生活。',
+            emotions: { happiness: 65, beauty: 75, sadness: 40, warmth: 70, loneliness: 35 },
+            characters: [
+                { name: '年轻人', icon: '🧑', importance: 5 },
+                { name: '老奶奶', icon: '👵', importance: 5 }
+            ],
+            relations: [
+                { source: '年轻人', target: '老奶奶', label: '拜访' }
+            ]
+        }, {
+            id: 'baiyingwu',
+            title: '白鹦鹉的森林',
+            icon: '🐦',
+            intro: '一片神秘的森林里，白鹦鹉守护着人类遗忘的记忆与梦想。',
+            summary: '传说在森林深处，白鹦鹉们守护着人类的记忆。一个失去记忆的女孩来到森林，在白鹦鹉的引导下，逐渐找回了自己丢失的过去。故事探讨了记忆、身份与自我认同的主题。',
+            emotions: { happiness: 45, beauty: 60, sadness: 70, warmth: 50, loneliness: 65 },
+            characters: [
+                { name: '女孩', icon: '👧', importance: 5 },
+                { name: '白鹦鹉', icon: '🐦', importance: 5 }
+            ],
+            relations: [
+                { source: '女孩', target: '白鹦鹉', label: '引导' }
+            ]
+        }, {
+            id: 'huaxiang',
+            title: '花香小镇',
+            icon: '🌿',
+            intro: '一座被花香笼罩的小镇，镇上的居民与花朵之间有着千丝万缕的联系。',
+            summary: '花香小镇的每个居民都种植着一种特殊的花，这些花不仅美丽，还承载着种植者的情感与记忆。一个外来者来到小镇，被这里的花香与故事所吸引，逐渐融入了这个充满魔法的社区。',
+            emotions: { happiness: 70, beauty: 80, sadness: 40, warmth: 65, loneliness: 30 },
+            characters: [
+                { name: '外来者', icon: '🧳', importance: 5 },
+                { name: '小镇居民', icon: '👨‍🌾', importance: 3 }
+            ],
+            relations: [
+                { source: '外来者', target: '小镇居民', label: '融入' }
+            ]
+        }, {
+            id: 'fengdehanxie',
+            title: '风的旱冰鞋',
+            icon: '⛸️',
+            intro: '一双神奇的旱冰鞋，让穿上它的人能够像风一样自由地奔跑。',
+            summary: '一个孤独的少年在旧货店发现了一双旱冰鞋，穿上后他发现自己能够以不可思议的速度奔跑，甚至能够追逐风的方向。在奔跑中，他遇到了各种奇妙的生物和景象，也逐渐明白了自由的真正含义。',
+            emotions: { happiness: 55, beauty: 70, sadness: 50, warmth: 60, loneliness: 40 },
+            characters: [
+                { name: '少年', icon: '🧑', importance: 5 },
+                { name: '旧货店老板', icon: '👨', importance: 3 }
+            ],
+            relations: [
+                { source: '少年', target: '旧货店老板', label: '购买' }
+            ]
+        }];
+
+        // ================================================================
+        //  渲染作品卡片
+        // ================================================================
+        const grid = document.getElementById('worksGrid');
+        worksData.forEach((work) => {
+            const card = document.createElement('div');
+            card.className = 'work-card';
+            card.dataset.id = work.id;
+            card.innerHTML = `
+                <span class="icon">${work.icon}</span>
+                <span class="title">${work.title}</span>
+                <span class="click-hint">↗</span>
+            `;
+            card.addEventListener('click', () => openModal(work.id));
+            grid.appendChild(card);
+        });
+
+        // ================================================================
+        //  模态框 & D3 力导向图
+        // ================================================================
+        const overlay = document.getElementById('modalOverlay');
+        const closeBtn = document.getElementById('modalClose');
+        const modalIcon = document.getElementById('modalIcon');
+        const modalName = document.getElementById('modalName');
+        const modalSub = document.getElementById('modalSub');
+        const modalIntro = document.getElementById('modalIntro');
+        const modalSummary = document.getElementById('modalSummary');
+        const emotionRows = document.getElementById('emotionRows');
+        const emotionTags = document.getElementById('emotionTags');
+        const graphContainer = document.getElementById('modalGraphContainer');
+
+        const emotionLabels = {
+            happiness: '幸福',
+            beauty: '美好',
+            sadness: '忧伤',
+            warmth: '温情',
+            loneliness: '孤独'
+        };
+        const emotionColors = {
+            happiness: 'happiness',
+            beauty: 'beauty',
+            sadness: 'sadness',
+            warmth: 'warmth',
+            loneliness: 'loneliness'
+        };
+        const tagClasses = {
+            happiness: 'tag-happiness',
+            beauty: 'tag-beauty',
+            sadness: 'tag-sadness',
+            warmth: 'tag-warmth',
+            loneliness: 'tag-loneliness'
+        };
+
+        let currentGraphId = null;
+
+        function renderRelationGraph(container, characters, relations) {
+            // 清空容器
+            container.innerHTML = '';
+
+            // 如果无角色或关系，显示提示
+            if (!characters || characters.length === 0) {
+                container.innerHTML = '<div class="graph-placeholder">暂无角色关系数据</div>';
+                return;
+            }
+
+            // 准备节点数据
+            const nodes = characters.map(c => ({
+                id: c.name,
+                name: c.name,
+                icon: c.icon || '👤',
+                importance: c.importance || 3
+            }));
+
+            // 准备连线数据
+            const links = relations.map(r => ({
+                source: r.source,
+                target: r.target,
+                label: r.label || ''
+            }));
+
+            // 使用 D3 力导向图
+            const width = container.clientWidth || 600;
+            const height = Math.max(320, container.clientHeight || 320);
+
+            const svg = d3.select(container)
+                .append('svg')
+                .attr('viewBox', `0 0 ${width} ${height}`)
+                .style('width', '100%')
+                .style('height', '100%')
+                .style('min-height', '320px');
+
+            const g = svg.append('g');
+
+            // 力模拟
+            const simulation = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(links).id(d => d.id).distance(100))
+                .force('charge', d3.forceManyBody().strength(-200))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(d => d.importance * 8 + 12));
+
+            // 绘制连线
+            const link = g.append('g')
+                .selectAll('line')
+                .data(links)
+                .enter()
+                .append('line')
+                .attr('class', 'link-line')
+                .attr('stroke-width', 2)
+                .attr('stroke', '#bbb0a2')
+                .attr('stroke-opacity', 0.6);
+
+            // 绘制连线标签（关系类型）
+            const linkLabels = g.append('g')
+                .selectAll('text')
+                .data(links)
+                .enter()
+                .append('text')
+                .attr('class', 'link-label')
+                .text(d => d.label || '')
+                .attr('font-size', 10)
+                .attr('fill', '#6b6256')
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'central')
+                .attr('dy', -6) // 偏移避免遮盖
+                .style('pointer-events', 'none')
+                .style('background', 'rgba(255,255,255,0.7)')
+                .style('padding', '2px 6px')
+                .style('border-radius', '8px');
+
+            // 绘制节点
+            const node = g.append('g')
+                .selectAll('g')
+                .data(nodes)
+                .enter()
+                .append('g')
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended)
+                );
+
+            // 节点圆圈
+            node.append('circle')
+                .attr('r', d => d.importance * 7 + 10)
+                .attr('fill', '#d6c9b8')
+                .attr('stroke', '#b28b6f')
+                .attr('stroke-width', 2);
+
+            // 节点图标（emoji）
+            node.append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'central')
+                .attr('font-size', d => d.importance * 4 + 12)
+                .text(d => d.icon || '👤');
+
+            // 节点名称（放在圆下方）
+            node.append('text')
+                .attr('class', 'node-text')
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'hanging')
+                .attr('y', d => d.importance * 7 + 16)
+                .attr('font-size', 11)
+                .text(d => d.name);
+
+            // 更新位置
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+
+                linkLabels
+                    .attr('x', d => (d.source.x + d.target.x) / 2)
+                    .attr('y', d => (d.source.y + d.target.y) / 2 - 8);
+
+                node
+                    .attr('transform', d => `translate(${d.x},${d.y})`);
+            });
+
+            // 拖拽函数
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+
+            // 自适应窗口变化
+            const resizeObserver = new ResizeObserver(() => {
+                const w = container.clientWidth;
+                const h = Math.max(320, container.clientHeight || 320);
+                svg.attr('viewBox', `0 0 ${w} ${h}`);
+                simulation.force('center', d3.forceCenter(w / 2, h / 2));
+                simulation.alpha(0.3).restart();
+            });
+            resizeObserver.observe(container);
+            // 存储 observer 以便清理
+            container._resizeObserver = resizeObserver;
+
+            // 返回 simulation 以便后续清理
+            return simulation;
+        }
+
+        // 清理旧图
+        function clearGraph(container) {
+            if (container._resizeObserver) {
+                container._resizeObserver.disconnect();
+                delete container._resizeObserver;
+            }
+            // D3 会移除所有子元素，但我们需要手动清空
+            d3.select(container).selectAll('*').remove();
+            container.innerHTML = '<div class="graph-placeholder">加载关系图中...</div>';
+        }
+
+        // ================================================================
+        //  打开模态框
+        // ================================================================
+        function openModal(id) {
+            const work = worksData.find(w => w.id === id);
+            if (!work) return;
+
+            // 填充基础信息
+            modalIcon.textContent = work.icon;
+            modalName.textContent = work.title;
+            modalSub.textContent = work.intro;
+            modalIntro.textContent = work.intro;
+            modalSummary.textContent = work.summary;
+
+            // 情感分析
+            const em = work.emotions;
+            let rowsHtml = '';
+            let tagsHtml = '';
+            const sorted = Object.keys(em).sort((a, b) => em[b] - em[a]);
+            sorted.forEach(key => {
+                const val = em[key];
+                const label = emotionLabels[key] || key;
+                const cls = emotionColors[key] || 'happiness';
+                rowsHtml += `
+                    <div class="emotion-row">
+                        <span class="label">${label}</span>
+                        <div class="track">
+                            <div class="fill ${cls}" style="width:${val}%;">${val}%</div>
+                        </div>
+                        <span class="value">${val}</span>
+                    </div>
+                `;
+            });
+            const top3 = sorted.slice(0, 3);
+            top3.forEach(key => {
+                const label = emotionLabels[key] || key;
+                const tagCls = tagClasses[key] || 'tag-happiness';
+                tagsHtml += `<span class="emotion-tag ${tagCls}">${label}</span>`;
+            });
+            emotionRows.innerHTML = rowsHtml;
+            emotionTags.innerHTML = tagsHtml;
+
+            // 关系图
+            clearGraph(graphContainer);
+            if (work.characters && work.characters.length > 0) {
+                // 显示角色图
+                renderRelationGraph(graphContainer, work.characters, work.relations || []);
+            } else {
+                graphContainer.innerHTML = '<div class="graph-placeholder">该作品暂无角色关系数据</div>';
+            }
+
+            // 显示模态框
+            overlay.classList.add('active');
+            document.body.classList.add('modal-open');
+        }
+
+        // ================================================================
+        //  关闭模态框
+        // ================================================================
+        function closeModal() {
+            overlay.classList.remove('active');
+            document.body.classList.remove('modal-open');
+            // 清理图形资源
+            clearGraph(graphContainer);
+        }
+
+        closeBtn.addEventListener('click', closeModal);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        console.log('🌸 安房直子作品集已加载，点击作品卡片查看完整角色关系图。');
+    </script>
+</body>
+</html>
